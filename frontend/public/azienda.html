@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>SOES S.p.A. - Azienda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
+        .glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen pt-20">
+
+    <nav class="glass-nav fixed w-full z-50 top-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <a href="/" class="flex items-center">
+                    <img src="/assets/logo.png" onerror="this.src='https://placehold.co/150x50?text=SOES'" class="h-10 w-auto mr-3">
+                    <span class="text-2xl font-extrabold text-[#004080] hidden md:block">SOES S.p.A.</span>
+                </a>
+                <div class="hidden md:flex space-x-8 items-center font-medium">
+                    <a href="/" class="text-gray-600 hover:text-[#004080] transition">Home</a>
+                    <a href="/azienda" class="text-[#004080]">Azienda</a>
+                    <a href="/services" class="text-gray-600 hover:text-[#004080] transition">Servizi</a>
+                    <a href="/modulistica" class="text-gray-600 hover:text-[#004080] transition">Modulistica</a>
+                    <a href="/contatti" class="text-gray-600 hover:text-[#004080] transition">Contatti</a>
+                </div>
+                <a href="/admin.html" class="bg-[#004080] text-white px-5 py-2 rounded-full text-sm font-bold">Admin</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-16 flex-grow">
+        <h1 class="text-4xl font-bold text-[#004080] mb-8" id="page-title">Chi Siamo</h1>
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+            <p class="text-lg text-gray-700 leading-relaxed" id="page-content">Caricamento...</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+            <div class="p-6 bg-blue-50 rounded-xl">
+                <h3 class="font-bold text-[#004080] mb-2">Innovazione</h3>
+                <p class="text-gray-600">Software proprietari per la gestione integrata.</p>
+            </div>
+            <div class="p-6 bg-blue-50 rounded-xl">
+                <h3 class="font-bold text-[#004080] mb-2">Trasparenza</h3>
+                <p class="text-gray-600">Processi chiari e certificati per la PA.</p>
+            </div>
+            <div class="p-6 bg-blue-50 rounded-xl">
+                <h3 class="font-bold text-[#004080] mb-2">Supporto</h3>
+                <p class="text-gray-600">Assistenza continua a Cittadini ed Enti.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-[#002b55] text-white py-16 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8 text-sm">
+            <div class="space-y-4">
+                <img src="/assets/logo.png" class="h-10 w-auto bg-white p-1 rounded-lg"> 
+                <p class="text-blue-200 leading-relaxed">Spazi, Tempi e Modi per vivere la città.<br>Tecnologia per la PA.</p>
+            </div>
+            <div>
+                <h4 class="font-bold text-white border-b border-blue-700 pb-2 mb-4">Sede Legale</h4>
+                <p class="text-blue-200">Via Roma 236</p>
+                <p class="text-blue-200">82037 Telese Terme (BN)</p>
+                <p class="text-blue-200 mt-2">Tel: +39 0824 941202</p>
+            </div>
+            <div>
+                <h4 class="font-bold text-white border-b border-blue-700 pb-2 mb-4">Altre Sedi</h4>
+                <div class="mb-4">
+                    <p class="text-white font-semibold text-xs uppercase">Sede Lazio</p>
+                    <p class="text-blue-200">Via A. Sebastiani, 77<br>04026 Minturno (LT)</p>
+                </div>
+                <div>
+                    <p class="text-white font-semibold text-xs uppercase">Sede Sicilia</p>
+                    <p class="text-blue-200">Via Avellino, 42/A<br>91016 Erice (TP)</p>
+                </div>
+            </div>
+            <div>
+                <h4 class="font-bold text-white border-b border-blue-700 pb-2 mb-4">Info & Link</h4>
+                <ul class="space-y-2 text-blue-200">
+                    <li><a href="#" class="hover:text-white">Privacy Policy</a></li>
+                    <li><a href="#" class="hover:text-white">Certificazioni ISO</a></li>
+                    <li class="pt-2 text-xs text-blue-400">P.IVA 01199760628</li>
+                </ul>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        fetch('/api/content/azienda').then(r=>r.json()).then(d => {
+            document.getElementById('page-title').innerText = d.title || "Chi Siamo";
+            document.getElementById('page-content').innerText = d.text || "Contenuto non disponibile.";
+        }).catch(e => document.getElementById('page-content').innerText = "Errore caricamento.");
+    </script>
+</body>
+</html>

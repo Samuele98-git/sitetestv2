@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>SOES Admin Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="http://localhost:8080/js/keycloak.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Custom UI */
+        .loader {border:4px solid #f3f3f3;border-top:4px solid #004080;border-radius:50%;width:30px;height:30px;animation:spin 1s linear infinite} 
+        @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+        .nav-item { display:flex; align-items:center; padding: 12px 24px; cursor:pointer; border-left: 4px solid transparent; transition: all 0.2s; color: #a0aec0; }
+        .nav-item:hover { background: #1a3a5a; color: white; }
+        .nav-item.active { background: #004080; border-left-color: #e63946; color: white; }
+        .preview-box { border: 2px dashed #cbd5e0; transition: border-color 0.2s; }
+        .preview-box:hover { border-color: #3b82f6; }
+        aside::-webkit-scrollbar { width: 5px; } aside::-webkit-scrollbar-thumb { background: #2d3748; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans h-screen overflow-hidden">
+
+    <div id="loading_kc" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="loader mx-auto mb-4"></div>
+            <p class="text-gray-500 font-medium">Autenticazione Admin...</p>
+        </div>
+    </div>
+
+    <div id="vue-app" class="flex h-full w-full" style="display: none;">
+        
+        <aside class="w-72 bg-[#001f3f] flex flex-col shadow-2xl z-20 flex-shrink-0">
+            <div class="p-6 bg-[#001830] flex items-center gap-3 border-b border-gray-700">
+                <img src="/assets/logo.png" class="h-8 brightness-200 grayscale">
+                <span class="font-bold text-white text-lg tracking-wide">ADMIN</span>
+            </div>
+            
+            <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+                <a @click="tab='home'" :class="['nav-item', tab==='home'?'active':'']"><i class="fas fa-home w-6"></i> Home Page</a>
+                <a @click="tab='pages'" :class="['nav-item', tab==='pages'?'active':'']"><i class="fas fa-layer-group w-6"></i> Costruttore Pagine</a>
+                <a @click="tab='menu'" :class="['nav-item', tab==='menu'?'active':'']"><i class="fas fa-bars w-6"></i> Menu Sito</a>
+                <a @click="tab='services'" :class="['nav-item', tab==='services'?'active':'']"><i class="fas fa-briefcase w-6"></i> Servizi</a>
+                <a @click="tab='modulistica'" :class="['nav-item', tab==='modulistica'?'active':'']"><i class="fas fa-file-pdf w-6"></i> Modulistica</a>
+                <a @click="tab='sedi'" :class="['nav-item', tab==='sedi'?'active':'']"><i class="fas fa-map-marker-alt w-6"></i> Contatti & Sedi</a>
+                <a @click="tab='messages'" :class="['nav-item', tab==='messages'?'active':'']"><i class="fas fa-envelope w-6"></i> Messaggi</a>
+                <a @click="tab='settings'" :class="['nav-item', tab==='settings'?'active':'']"><i class="fas fa-cog w-6"></i> Impostazioni</a>
+            </nav>
+
+            <div class="p-4 bg-[#001830] border-t border-gray-700">
+                <button onclick="keycloak.logout()" class="w-full bg-red-900/30 text-red-400 py-2 rounded hover:bg-red-900/50 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-sign-out-alt"></i> Esci
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto bg-gray-100 p-8">
+
+            <div v-if="tab === 'home'" class="max-w-5xl mx-auto space-y-8">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-3xl font-bold text-[#001f3f]">Home Carousel</h1>
+                    <button @click="saveContent('home', home)" class="bg-green-600 text-white px-6 py-2 rounded shadow hover:bg-green-700 font-bold"><i class="fas fa-save mr-2"></i> Salva</button>
+                </div>
+
+                <div class="space-y-6">
+                    <div v-for="(slide, i) in home.slides" :key="i" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 relative group">
+                        <button @click="home.slides.splice(i,1)" class="absolute top-4 right-4 text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
+                        <span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs font-bold mb-4 inline-block">Slide {{i+1}}</span>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-gray-50 p-4 rounded border">
+                                <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Immagine Sfondo</label>
+                                <div class="flex items-center gap-4">
+                                    <img v-if="slide.image" :src="slide.image" class="w-24 h-16 object-cover rounded bg-gray-200">
+                                    <div class="flex-1">
+                                        <input type="file" @change="uploadSlideImage($event, i)" class="text-xs mb-2 w-full">
+                                        <input v-model="slide.image" class="w-full border p-1 text-xs rounded" placeholder="URL manuale...">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <input v-model="slide.title" class="w-full border p-2 rounded font-bold" placeholder="Titolo Principale">
+                                <textarea v-model="slide.subtitle" class="w-full border p-2 rounded text-sm h-16" placeholder="Sottotitolo..."></textarea>
+                                <div class="flex gap-2">
+                                    <input v-model="slide.cta_text" class="w-1/2 border p-2 rounded text-sm" placeholder="Testo Bottone">
+                                    <input v-model="slide.link" class="w-1/2 border p-2 rounded text-sm font-mono text-blue-600" placeholder="Link Destinazione">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button @click="home.slides.push({title:'Titolo', subtitle:'', cta_text:'Scopri', link:'#', image:''})" class="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-bold hover:bg-white hover:border-blue-400 transition">+ Aggiungi Slide</button>
+                </div>
+            </div>
+
+            <div v-if="tab === 'pages'" class="h-full flex flex-col">
+                <div v-if="!editingPage" class="max-w-6xl mx-auto w-full">
+                    <div class="flex justify-between items-center mb-8">
+                        <h1 class="text-3xl font-bold text-[#001f3f]">Pagine Personalizzate</h1>
+                        <button @click="createPage" class="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700 font-bold"><i class="fas fa-plus mr-2"></i> Nuova Pagina</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div v-for="p in pagesList" :key="p.id" class="bg-white p-6 rounded-xl shadow border hover:shadow-lg transition">
+                            <h3 class="font-bold text-lg mb-1 text-[#004080]">{{p.title}}</h3>
+                            <p class="text-xs text-gray-400 font-mono mb-4 bg-gray-50 p-1 rounded inline-block">/dynamic.html?p={{p.slug}}</p>
+                            <div class="flex gap-2 mt-2">
+                                <a :href="'/dynamic.html?p='+p.slug" target="_blank" class="flex-1 bg-gray-100 text-center py-2 rounded text-sm text-gray-600 hover:bg-gray-200">Vedi</a>
+                                <button @click="editPage(p.slug)" class="flex-1 bg-blue-50 text-blue-600 py-2 rounded text-sm font-bold hover:bg-blue-100">Modifica</button>
+                                <button @click="deletePage(p.id)" class="px-3 bg-red-50 text-red-500 rounded hover:bg-red-100"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-else class="flex flex-col h-full bg-white rounded-xl shadow-xl overflow-hidden">
+                    <div class="bg-gray-50 border-b p-4 flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <button @click="editingPage=null; loadPagesList()" class="text-gray-500 hover:text-black"><i class="fas fa-arrow-left"></i></button>
+                            <input v-model="editingPage.title" class="bg-transparent font-bold text-xl border-none focus:ring-0" placeholder="Nome Pagina">
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="addBlock('hero')" class="px-3 py-1 bg-purple-100 text-purple-700 rounded text-xs font-bold hover:bg-purple-200">+ Hero</button>
+                            <button @click="addBlock('text')" class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold hover:bg-blue-200">+ Testo</button>
+                            <button @click="addBlock('image')" class="px-3 py-1 bg-green-100 text-green-700 rounded text-xs font-bold hover:bg-green-200">+ Img</button>
+                            <button @click="addBlock('cards')" class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-bold hover:bg-yellow-200">+ Cards</button>
+                            <div class="w-px bg-gray-300 mx-2"></div>
+                            <button @click="savePage" class="bg-green-600 text-white px-4 py-1 rounded font-bold shadow hover:bg-green-700">Salva</button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto p-8 bg-gray-100">
+                        <div class="max-w-4xl mx-auto space-y-4">
+                            <div class="bg-white p-4 rounded shadow-sm border mb-6 grid grid-cols-2 gap-4">
+                                <div><label class="text-xs font-bold text-gray-500">URL Slug</label><input v-model="editingPage.slug" class="w-full border p-2 rounded"></div>
+                                <div class="flex items-end"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" v-model="editingPage.is_visible"> <span>Pubblica Online</span></label></div>
+                            </div>
+
+                            <div v-for="(block, i) in editingPage.blocks" :key="i" class="preview-box bg-white p-4 relative group rounded-lg">
+                                <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition flex gap-2">
+                                    <span class="bg-gray-100 text-xs px-2 py-1 rounded uppercase font-bold">{{block.type}}</span>
+                                    <button @click="editingPage.blocks.splice(i,1)" class="text-red-500 hover:bg-red-50 px-2 rounded">✕</button>
+                                </div>
+
+                                <div v-if="block.type === 'hero'" class="text-center p-4 bg-gray-800 text-white rounded">
+                                    <input v-model="block.title" class="bg-transparent text-2xl font-bold text-center w-full focus:outline-none mb-2" placeholder="Titolo">
+                                    <input v-model="block.text" class="bg-transparent text-center w-full focus:outline-none opacity-80" placeholder="Sottotitolo">
+                                    <div class="mt-4 flex gap-2 justify-center">
+                                        <input v-model="block.image" class="text-black text-xs p-1 rounded w-64" placeholder="URL Sfondo">
+                                    </div>
+                                </div>
+
+                                <div v-if="block.type === 'text'">
+                                    <textarea v-model="block.content" class="w-full border-0 focus:ring-0 h-32 p-0 resize-y" placeholder="Scrivi il contenuto..."></textarea>
+                                </div>
+
+                                <div v-if="block.type === 'image'" class="flex gap-4">
+                                    <img :src="block.url || 'https://placehold.co/100'" class="h-20 w-20 object-cover rounded bg-gray-100">
+                                    <div class="flex-1">
+                                        <input type="file" @change="uploadBlockImage($event, block)" class="text-xs mb-2 block">
+                                        <input v-model="block.url" class="w-full border p-1 text-xs rounded" placeholder="URL Immagine">
+                                    </div>
+                                </div>
+
+                                <div v-if="block.type === 'cards'">
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <div v-for="(c, k) in block.items" :key="k" class="bg-gray-50 p-2 rounded border relative">
+                                            <button @click="block.items.splice(k,1)" class="absolute top-0 right-0 text-red-400 px-1">×</button>
+                                            <input v-model="c.title" class="w-full bg-transparent font-bold border-b mb-1" placeholder="Titolo">
+                                            <textarea v-model="c.text" class="w-full bg-transparent text-xs h-12 resize-none" placeholder="Testo..."></textarea>
+                                        </div>
+                                        <button @click="block.items.push({title:'', text:''})" class="border-2 border-dashed p-2 text-gray-400 font-bold hover:bg-gray-50">+ Card</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="tab === 'menu'" class="max-w-4xl mx-auto space-y-6">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-3xl font-bold text-[#001f3f]">Menu di Navigazione</h1>
+                    <button @click="saveMenu" class="bg-green-600 text-white px-6 py-2 rounded shadow font-bold">Salva Menu</button>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow border">
+                    <div v-for="(item, i) in menu" :key="i" class="mb-4 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="font-bold text-gray-400">#{{i+1}}</span>
+                            <input v-model="item.label" class="border p-2 rounded font-bold flex-1" placeholder="Etichetta">
+                            <input v-model="item.url" class="border p-2 rounded w-1/3 font-mono text-sm" placeholder="URL">
+                            <button @click="menu.splice(i,1)" class="text-red-500 hover:bg-red-100 p-2 rounded"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <div class="ml-10 pl-4 border-l-4 border-blue-200 space-y-2">
+                            <div v-for="(child, j) in item.children" :key="j" class="flex gap-2">
+                                <span class="text-gray-400">↳</span>
+                                <input v-model="child.label" class="border p-1 rounded text-sm flex-1" placeholder="Sotto-voce">
+                                <input v-model="child.url" class="border p-1 rounded text-sm w-1/3 font-mono" placeholder="URL">
+                                <button @click="item.children.splice(j,1)" class="text-red-400 text-xs">✕</button>
+                            </div>
+                            <button @click="item.children.push({label:'', url:''})" class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded font-bold">+ Aggiungi Dropdown</button>
+                        </div>
+                    </div>
+                    <button @click="menu.push({label:'Nuovo Link', url:'#', children:[]})" class="w-full py-3 bg-gray-100 border-2 border-dashed border-gray-300 rounded text-gray-500 font-bold hover:bg-white transition">+ Voce Principale</button>
+                </div>
+            </div>
+
+            <div v-if="tab === 'services'" class="max-w-5xl mx-auto space-y-6">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-3xl font-bold text-[#001f3f]">Gestione Servizi</h1>
+                    <button @click="saveContent('services', services)" class="bg-green-600 text-white px-6 py-2 rounded font-bold shadow">Salva Tutto</button>
+                </div>
+                <div class="grid gap-6">
+                    <div v-for="(svc, i) in services.list" :key="i" class="bg-white p-6 rounded-xl shadow border relative">
+                        <button @click="services.list.splice(i,1)" class="absolute top-4 right-4 text-red-500"><i class="fas fa-trash"></i></button>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="text-xs font-bold uppercase text-gray-500">Titolo</label>
+                                <input v-model="svc.title" class="w-full text-lg font-bold border p-2 rounded mb-2">
+                                <label class="text-xs font-bold uppercase text-gray-500">Descrizione</label>
+                                <textarea v-model="svc.desc" class="w-full border p-2 rounded h-24 text-sm"></textarea>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded border">
+                                <label class="text-xs font-bold uppercase text-gray-500 mb-2">Sfondo</label>
+                                <div class="flex items-center gap-4">
+                                    <img v-if="svc.image" :src="svc.image" class="w-16 h-16 object-cover rounded bg-gray-200">
+                                    <input type="file" @change="uploadSvcImage($event, i)" class="text-xs">
+                                </div>
+                                <div class="mt-4">
+                                    <label class="text-xs font-bold text-gray-500">Opacità: {{svc.opacity}}</label>
+                                    <input type="range" v-model="svc.opacity" min="0" max="1" step="0.1" class="w-full">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button @click="services.list.push({title:'Nuovo', desc:'', opacity:'0.5'})" class="w-full py-3 bg-blue-50 text-blue-600 font-bold rounded border border-blue-200">+ Aggiungi Servizio</button>
+                </div>
+            </div>
+
+            <div v-if="['modulistica', 'sedi', 'messages'].includes(tab)" class="max-w-5xl mx-auto space-y-6">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-3xl font-bold capitalize text-[#001f3f]">{{tab}}</h1>
+                    <button v-if="tab!=='messages'" @click="tab==='modulistica'?saveContent('modulistica',modulistica):saveContent('contacts',contactData)" class="bg-green-600 text-white px-6 py-2 rounded font-bold shadow">Salva</button>
+                    <button v-else @click="loadMessages" class="bg-blue-100 text-blue-800 px-4 py-2 rounded font-bold">Aggiorna</button>
+                </div>
+
+                <div v-if="tab==='modulistica'">
+                    <div v-for="(sec, i) in modulistica.sections" :key="i" class="bg-white p-6 rounded shadow border mb-4 relative">
+                        <button @click="modulistica.sections.splice(i,1)" class="absolute top-4 right-4 text-red-500">✕</button>
+                        <input v-model="sec.name" class="font-bold text-lg border-b w-full mb-4" placeholder="Nome Sezione">
+                        <div v-for="(pdf, j) in sec.pdfs" :key="j" class="flex justify-between bg-gray-50 p-2 mb-1 rounded border">
+                            <span class="text-sm font-medium">{{pdf.name}}</span>
+                            <div class="flex gap-2"><a :href="pdf.path" target="_blank" class="text-blue-500 text-xs font-bold">Vedi</a><button @click="sec.pdfs.splice(j,1)" class="text-red-500 text-xs">Del</button></div>
+                        </div>
+                        <div class="mt-4 flex gap-2"><input type="file" :ref="'pdfInput'+i" class="text-sm"><button @click="uploadPdf(i)" class="bg-blue-600 text-white px-3 py-1 rounded text-xs">Carica</button></div>
+                    </div>
+                    <button @click="modulistica.sections.push({name:'Nuova Sezione', pdfs:[]})" class="w-full bg-gray-100 py-3 font-bold text-gray-500">+ Sezione</button>
+                </div>
+
+                <div v-if="tab==='sedi'">
+                    <div v-for="(sede, i) in contactData.sedi" :key="i" class="bg-white p-6 rounded shadow border mb-4 relative">
+                        <button @click="contactData.sedi.splice(i,1)" class="absolute top-4 right-4 text-red-500">✕</button>
+                        <div class="grid grid-cols-2 gap-4">
+                            <input v-model="sede.name" class="border p-2 font-bold rounded" placeholder="Nome">
+                            <input v-model="sede.phone" class="border p-2 rounded" placeholder="Telefono">
+                            <input v-model="sede.address" class="border p-2 col-span-2 rounded" placeholder="Indirizzo">
+                            <input v-model="sede.map_url" class="border p-2 col-span-2 rounded bg-gray-50 font-mono text-xs" placeholder="Google Embed URL">
+                        </div>
+                    </div>
+                    <button @click="contactData.sedi.push({name:'Nuova', map_url:''})" class="w-full bg-gray-100 py-3 font-bold text-gray-500">+ Sede</button>
+                </div>
+
+                <div v-if="tab==='messages'" class="bg-white rounded shadow overflow-hidden">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 font-bold text-gray-500 border-b"><tr><th class="p-4">Data</th><th class="p-4">Nome</th><th class="p-4">Email</th><th class="p-4">Msg</th><th class="p-4"></th></tr></thead>
+                        <tbody>
+                            <tr v-for="m in messages" :key="m.id" class="border-b hover:bg-gray-50">
+                                <td class="p-4">{{new Date(m.created_at).toLocaleDateString()}}</td>
+                                <td class="p-4 font-bold">{{m.name}} {{m.surname}}</td>
+                                <td class="p-4 text-blue-600">{{m.email}}</td>
+                                <td class="p-4 truncate max-w-xs text-gray-500">{{m.message}}</td>
+                                <td class="p-4 text-right">
+                                    <button @click="selectedMessage=m" class="text-blue-500 font-bold mr-2">Vedi</button>
+                                    <button @click="deleteMessage(m.id)" class="text-red-500 font-bold">X</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div v-if="tab==='settings'" class="max-w-lg mx-auto bg-white p-8 rounded shadow border-l-4 border-red-500">
+                <h3 class="font-bold text-xl mb-4">Avviso Globale</h3>
+                <input v-model="alertText" class="w-full border p-3 rounded mb-4" placeholder="Es. Manutenzione in corso...">
+                <button @click="saveAlert" class="bg-red-600 text-white px-6 py-2 rounded font-bold w-full">Aggiorna Sito</button>
+            </div>
+
+            <div v-if="selectedMessage" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+                <div class="bg-white p-8 rounded-xl max-w-xl w-full shadow-2xl">
+                    <h2 class="font-bold text-xl text-[#004080] mb-2">{{selectedMessage.name}} {{selectedMessage.surname}}</h2>
+                    <p class="text-sm text-gray-500 mb-6">{{selectedMessage.email}}</p>
+                    <div class="bg-gray-50 p-4 rounded border mb-6 whitespace-pre-wrap">{{selectedMessage.message}}</div>
+                    <div class="flex justify-end gap-2"><button @click="selectedMessage=null" class="bg-gray-200 px-4 py-2 rounded font-bold">Chiudi</button></div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        let keycloak = new Keycloak({url: 'http://localhost:8080', realm: 'soes-realm', clientId: 'soes-admin-client'});
+        
+        keycloak.init({ onLoad: 'login-required', checkLoginIframe: false }).then(auth => {
+            if(!auth) window.location.reload();
+            document.getElementById('loading_kc').style.display = 'none';
+            document.getElementById('vue-app').style.display = 'flex';
+            
+            new Vue({
+                el: '#vue-app',
+                data: {
+                    tab: 'home',
+                    home: { slides: [] }, services: { list: [] }, modulistica: { sections: [] }, contactData: { sedi: [] },
+                    menu: [], pagesList: [], editingPage: null, messages: [], selectedMessage: null, alertText: ''
+                },
+                mounted() { this.loadAll(); },
+                methods: {
+                    async api(url, method='GET', body=null, isFile=false) {
+                        await keycloak.updateToken(30);
+                        const headers = {'Authorization':'Bearer '+keycloak.token};
+                        if(!isFile) headers['Content-Type']='application/json';
+                        const opts = {method, headers};
+                        if(body) {
+                            if(isFile || url.includes('menu') || url.includes('pages') || url.includes('settings')) opts.body = isFile ? body : JSON.stringify(body);
+                            else opts.body = JSON.stringify({content: body});
+                        }
+                        return fetch('/api'+url, opts);
+                    },
+                    async loadAll() {
+                        let r = await this.api('/content/home'); this.home = await r.json(); if(!this.home.slides) this.$set(this.home,'slides',[]);
+                        r = await this.api('/content/services'); this.services = await r.json(); if(!this.services.list) this.$set(this.services,'list',[]);
+                        r = await this.api('/content/modulistica'); this.modulistica = await r.json(); if(!this.modulistica.sections) this.$set(this.modulistica,'sections',[]);
+                        r = await this.api('/content/contacts'); this.contactData = await r.json(); if(!this.contactData.sedi) this.$set(this.contactData,'sedi',[]);
+                        r = await this.api('/menu'); this.menu = await r.json();
+                        r = await fetch('/api/settings'); const s = await r.json(); const a = s.find(x=>x.key==='global_alert'); if(a) this.alertText=a.value;
+                        this.loadPagesList(); this.loadMessages();
+                    },
+                    // --- UPLOADS ---
+                    async uploadSlideImage(e, i) { const f = e.target.files[0]; if(!f) return; const fd = new FormData(); fd.append('file',f); const r = await this.api('/upload', 'POST', fd, true); const d = await r.json(); this.$set(this.home.slides[i], 'image', d.filePath); },
+                    async uploadSvcImage(e, i) { const f = e.target.files[0]; if(!f) return; const fd = new FormData(); fd.append('file',f); const r = await this.api('/upload', 'POST', fd, true); const d = await r.json(); this.$set(this.services.list[i], 'image', d.filePath); },
+                    async uploadBlockImage(e, block) { const f = e.target.files[0]; if(!f) return; const fd = new FormData(); fd.append('file',f); const r = await this.api('/upload', 'POST', fd, true); const d = await r.json(); block.url = d.filePath; },
+                    async uploadPdf(i) { const f = this.$refs['pdfInput'+i][0].files[0]; if(!f) return; const fd = new FormData(); fd.append('file',f); const r = await this.api('/upload', 'POST', fd, true); const d = await r.json(); this.modulistica.sections[i].pdfs.push({name: f.name, path: d.filePath}); },
+                    // --- PAGES ---
+                    async loadPagesList() { let r = await this.api('/pages'); this.pagesList = await r.json(); },
+                    createPage() { this.editingPage = { slug: 'nuova-'+Date.now(), title: 'Nuova Pagina', is_visible: true, blocks: [] }; },
+                    async editPage(slug) { let r = await this.api('/pages/'+slug); this.editingPage = await r.json(); },
+                    async savePage() { await this.api('/pages', 'POST', this.editingPage); alert('Salvato'); this.loadPagesList(); },
+                    async deletePage(id) { if(confirm('Eliminare?')) { await this.api('/pages/'+id, 'DELETE'); this.loadPagesList(); } },
+                    addBlock(type) {
+                        let b = {type};
+                        if(type==='hero') b={type, title:'Titolo', text:'...', image:''};
+                        if(type==='text') b={type, content:''};
+                        if(type==='image') b={type, url:''};
+                        if(type==='cards') b={type, items:[{title:'Card', text:'...'}]};
+                        this.editingPage.blocks.push(b);
+                    },
+                    // --- OTHERS ---
+                    async saveMenu() { await this.api('/menu', 'POST', {structure: this.menu}); alert('Menu salvato'); },
+                    async saveContent(p, d) { await this.api('/content/'+p, 'POST', d); alert('Salvato'); },
+                    async saveAlert() { await this.api('/settings', 'POST', {key:'global_alert', value:this.alertText}); alert('Avviso Aggiornato'); },
+                    async loadMessages() { let r = await this.api('/messages'); this.messages = await r.json(); },
+                    async deleteMessage(id) { if(confirm('Eliminare?')) { await this.api('/messages/'+id, 'DELETE'); this.loadMessages(); } }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

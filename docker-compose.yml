@@ -1,0 +1,87 @@
+version: '3.9'
+
+services:
+  # --- Database ---
+  postgres:
+    image: postgres:15-alpine
+    container_name: soes_db
+    environment:
+      POSTGRES_USER: soes_admin
+      POSTGRES_PASSWORD: secure_password_123
+      POSTGRES_DB: soes_data
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - soes_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U soes_admin -d soes_data"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # --- Keycloak (Identity Provider) ---
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.1
+    container_name: soes_keycloak
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/soes_data
+      KC_DB_USERNAME: soes_admin
+      KC_DB_PASSWORD: secure_password_123
+      KC_DB_SCHEMA: public
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8080
+      KC_HOSTNAME: localhost
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - soes_net
+
+  # --- Backend API ---
+  backend:
+    build: ./backend
+    container_name: soes_api
+    restart: always
+    environment:
+      DB_HOST: postgres
+      DB_USER: soes_admin
+      DB_PASS: secure_password_123
+      DB_NAME: soes_data
+      PORT: 3000
+    volumes:
+      - ./uploads:/app/uploads # Shared volume for uploads
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - keycloak
+    networks:
+      - soes_net
+
+  # --- Frontend (Nginx) ---
+  frontend:
+    build: ./frontend
+    container_name: soes_web
+    restart: always
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./uploads:/usr/share/nginx/html/uploads # Read uploads here
+    depends_on:
+      - backend
+    networks:
+      - soes_net
+
+networks:
+  soes_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  soes_uploads:

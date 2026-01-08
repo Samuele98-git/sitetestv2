@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>SOES S.p.A.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/app.js"></script>
+    <style>body { font-family: 'Inter', sans-serif; background: #f8fafc; }</style>
+</head>
+<body class="flex flex-col min-h-screen pt-24">
+    <div id="header-inject"></div>
+
+    <main id="page-content" class="flex-grow animate-fade-in">
+        <div class="flex justify-center items-center h-96"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#004080]"></div></div>
+    </main>
+
+    <div id="footer-inject"></div>
+
+    <script>
+        const slug = new URLSearchParams(window.location.search).get('p');
+        if(slug) {
+            fetch('/api/pages/'+slug).then(r => r.ok ? r.json() : Promise.reject()).then(page => {
+                document.title = page.title + " | SOES";
+                let html = '';
+                page.blocks.forEach(b => {
+                    if(b.type === 'hero') {
+                        html += `<div class="relative h-[50vh] flex items-center justify-center text-center text-white bg-cover bg-center" style="background-image: url('${b.image || 'https://placehold.co/1920x600'}');">
+                            <div class="absolute inset-0 bg-black/60"></div>
+                            <div class="relative z-10 px-4"><h1 class="text-5xl font-extrabold mb-4">${b.title}</h1><p class="text-xl text-gray-200">${b.text}</p></div></div>`;
+                    } else if(b.type === 'text') {
+                        html += `<div class="max-w-4xl mx-auto px-4 py-16 prose lg:prose-xl text-gray-700">${b.content}</div>`;
+                    } else if(b.type === 'image') {
+                        html += `<div class="max-w-7xl mx-auto px-4 py-12"><img src="${b.url}" class="w-full rounded-2xl shadow-xl"></div>`;
+                    } else if(b.type === 'cards') {
+                        html += `<div class="bg-gray-50 py-16"><div class="max-w-7xl mx-auto px-4 grid md:grid-cols-3 gap-8">${b.items.map(i => 
+                            `<div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100"><h3 class="text-xl font-bold text-[#004080] mb-2">${i.title}</h3><p class="text-gray-600">${i.text}</p></div>`).join('')}</div></div>`;
+                    }
+                });
+                document.getElementById('page-content').innerHTML = html;
+            }).catch(() => document.getElementById('page-content').innerHTML = '<div class="text-center py-32 text-gray-400">Pagina non trovata.</div>');
+        }
+    </script>
+</body>
+</html>

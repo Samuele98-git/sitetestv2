@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOES S.p.A.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="/js/app.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; overflow-x: hidden; }
+        .hero-section { height: 100vh; position: relative; overflow: hidden; background: #001f3f; }
+        .slide { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 1s ease-in-out, transform 6s ease-out; transform: scale(1.05); }
+        .slide.active { opacity: 1; transform: scale(1); }
+        .hero-overlay { background: linear-gradient(135deg, rgba(0,31,63,0.9) 0%, rgba(0,64,128,0.4) 100%); }
+        .progress-bar { height: 4px; background: #e63946; width: 0%; position: absolute; bottom: 0; left: 0; z-index: 20; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <div id="header-inject"></div>
+
+    <header class="hero-section flex items-center justify-center text-white text-center relative pt-24">
+        <div id="slides-container"></div>
+        <div class="hero-overlay absolute inset-0 z-10"></div>
+        
+        <div class="relative z-20 px-4 max-w-5xl">
+            <h1 id="hero-title" class="text-5xl md:text-7xl font-extrabold leading-tight mb-6 drop-shadow-xl"></h1>
+            <p id="hero-subtitle" class="text-xl md:text-2xl text-blue-100 mb-10 max-w-3xl mx-auto drop-shadow-lg"></p>
+            <a id="hero-cta" href="#" class="bg-[#e63946] hover:bg-red-700 text-white font-bold py-4 px-12 rounded-full shadow-2xl transition transform hover:scale-105 inline-block text-lg"></a>
+        </div>
+        <div class="progress-bar" id="progress-bar"></div>
+    </header>
+
+    <div id="footer-inject"></div>
+
+    <script>
+        let slides = [];
+        let cur = 0;
+        let tween;
+
+        fetch('/api/content/home').then(r=>r.json()).then(d => {
+            slides = d.slides || [];
+            if(slides.length === 0) {
+                // Default Slide if empty
+                slides = [{title:"Benvenuti in SOES", subtitle:"Innovazione per la PA", cta_text:"Servizi", link:"/services.html", image:"https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b"}];
+            }
+            
+            const con = document.getElementById('slides-container');
+            con.innerHTML = slides.map((s,i) => `<div class="slide ${i===0?'active':''}" style="background-image: url('${s.image}')"></div>`).join('');
+            runSlide(0);
+        });
+
+        function runSlide(i) {
+            const s = slides[i];
+            const title = document.getElementById('hero-title');
+            const sub = document.getElementById('hero-subtitle');
+            const cta = document.getElementById('hero-cta');
+            
+            gsap.to([title, sub, cta], {opacity:0, y:20, duration:0.3, onComplete:()=>{
+                title.innerHTML = s.title;
+                sub.innerHTML = s.subtitle;
+                cta.innerHTML = s.cta_text;
+                cta.href = s.link;
+                gsap.to([title, sub, cta], {opacity:1, y:0, duration:0.6, stagger:0.1});
+            }});
+
+            document.querySelectorAll('.slide').forEach((el, idx) => {
+                if(idx === i) el.classList.add('active'); else el.classList.remove('active');
+            });
+
+            if(tween) tween.kill();
+            gsap.set("#progress-bar", {width:"0%"});
+            if(slides.length > 1) {
+                tween = gsap.to("#progress-bar", {width:"100%", duration:6, ease:"none", onComplete:()=>{
+                    cur = (cur + 1) % slides.length;
+                    runSlide(cur);
+                }});
+            }
+        }
+    </script>
+</body>
+</html>

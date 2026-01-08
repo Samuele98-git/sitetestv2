@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Contatti - SOES S.p.A.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/app.js"></script>
+    <style>body { font-family: 'Inter', sans-serif; background: #f8fafc; }</style>
+</head>
+<body class="flex flex-col min-h-screen pt-24">
+    <div id="header-inject"></div>
+
+    <main class="max-w-7xl mx-auto px-4 py-16 flex-grow">
+        <h1 class="text-4xl font-extrabold text-[#004080] mb-12 text-center">Contattaci</h1>
+        
+        <div class="grid md:grid-cols-2 gap-12 bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+            <div class="p-10 bg-blue-50 border-r border-gray-100 flex flex-col">
+                <h3 class="text-2xl font-bold mb-6 text-[#004080]">Le Nostre Sedi</h3>
+                <div id="sedi-list" class="space-y-4 mb-8"></div>
+                <div class="flex-grow bg-white rounded-xl shadow-inner overflow-hidden relative min-h-[300px]">
+                    <iframe id="map-frame" class="w-full h-full border-0" allowfullscreen loading="lazy"></iframe>
+                </div>
+                <p class="text-xs text-center text-gray-500 mt-2">Seleziona una sede per vedere la mappa.</p>
+            </div>
+
+            <div class="p-10">
+                <h3 class="text-2xl font-bold mb-6 text-gray-800">Invia un messaggio</h3>
+                <form id="contact-form" class="space-y-5">
+                    <div class="grid grid-cols-2 gap-5">
+                        <input type="text" id="name" placeholder="Nome" required class="w-full bg-gray-50 border p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="text" id="surname" placeholder="Cognome" required class="w-full bg-gray-50 border p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <input type="email" id="email" placeholder="Email" required class="w-full bg-gray-50 border p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                    <textarea id="message" rows="5" placeholder="Come possiamo aiutarti?" required class="w-full bg-gray-50 border p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                    <div id="form-feedback" class="hidden p-4 rounded-xl text-sm font-bold text-center"></div>
+                    <button type="submit" class="w-full bg-[#e63946] hover:bg-red-700 text-white font-bold py-4 rounded-xl shadow-lg transition transform hover:scale-[1.02]">Invia Messaggio</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <div id="footer-inject"></div>
+
+    <script>
+        fetch('/api/content/contacts').then(r=>r.json()).then(d => {
+            const list = document.getElementById('sedi-list');
+            const map = document.getElementById('map-frame');
+            if(d.sedi.length > 0) {
+                map.src = d.sedi[0].map_url;
+                list.innerHTML = d.sedi.map(s => `
+                    <div class="cursor-pointer p-4 rounded-xl bg-white border border-gray-200 hover:border-blue-500 hover:shadow-md transition group" onclick="document.getElementById('map-frame').src='${s.map_url}'">
+                        <h4 class="font-bold text-[#004080] group-hover:text-blue-600">${s.name}</h4>
+                        <p class="text-sm text-gray-600">${s.address}</p>
+                        <p class="text-xs text-gray-400 mt-1">${s.phone}</p>
+                    </div>
+                `).join('');
+            }
+        });
+
+        document.getElementById('contact-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const fb = document.getElementById('form-feedback');
+            btn.disabled = true; btn.innerText = "Invio in corso...";
+            
+            try {
+                const res = await fetch('/api/contact', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        name: document.getElementById('name').value,
+                        surname: document.getElementById('surname').value,
+                        email: document.getElementById('email').value,
+                        message: document.getElementById('message').value
+                    })
+                });
+                if(res.ok) {
+                    fb.className = "hidden p-4 rounded-xl text-sm font-bold text-center block bg-green-100 text-green-700";
+                    fb.innerText = "Messaggio inviato con successo!";
+                    e.target.reset();
+                } else throw new Error();
+            } catch(e) {
+                fb.className = "hidden p-4 rounded-xl text-sm font-bold text-center block bg-red-100 text-red-700";
+                fb.innerText = "Si è verificato un errore.";
+            } finally { btn.disabled = false; btn.innerText = "Invia Messaggio"; }
+        });
+    </script>
+</body>
+</html>
