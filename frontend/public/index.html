@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SOES S.p.A.</title>
+    <link rel="icon" type="image/png" href="/assets/logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="/js/app.js"></script>
@@ -14,11 +15,15 @@
         .slide.active { opacity: 1; transform: scale(1); }
         .hero-overlay { background: linear-gradient(135deg, rgba(0,31,63,0.9) 0%, rgba(0,64,128,0.4) 100%); }
         .progress-bar { height: 4px; background: #e63946; width: 0%; position: absolute; bottom: 0; left: 0; z-index: 20; }
+        .reveal { opacity: 0; transform: translateY(50px); transition: all 1s cubic-bezier(0.16, 1, 0.3, 1); }
+        .reveal.active { opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
 
     <div id="header-inject"></div>
+    
+    <div id="alert-bar"></div>
 
     <header class="hero-section flex items-center justify-center text-white text-center relative pt-24">
         <div id="slides-container"></div>
@@ -32,52 +37,87 @@
         <div class="progress-bar" id="progress-bar"></div>
     </header>
 
+    <section class="py-32 bg-white relative z-10">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid md:grid-cols-3 gap-12">
+                <a href="/dynamic.html?p=servizio-sgv" class="reveal group block">
+                    <div class="h-64 rounded-3xl overflow-hidden mb-6 relative shadow-lg">
+                        <div class="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-110" style="background-image: url('https://images.unsplash.com/photo-1554224155-97e3a6fee717?auto=format&fit=crop&w=800&q=80')"></div>
+                        <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition"></div>
+                    </div>
+                    <h3 class="text-3xl font-bold text-[#001f3f] mb-3 group-hover:text-blue-600 transition">Gestione Verbali</h3>
+                    <p class="text-gray-500 text-lg leading-relaxed">Piattaforma integrata per la gestione digitale dell'intero iter sanzionatorio.</p>
+                </a>
+                <a href="/dynamic.html?p=servizio-sri" class="reveal group block" style="transition-delay: 100ms;">
+                    <div class="h-64 rounded-3xl overflow-hidden mb-6 relative shadow-lg">
+                        <div class="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-110" style="background-image: url('https://images.unsplash.com/photo-1516216628859-9bccecab13ca?auto=format&fit=crop&w=800&q=80')"></div>
+                        <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition"></div>
+                    </div>
+                    <h3 class="text-3xl font-bold text-[#001f3f] mb-3 group-hover:text-blue-600 transition">Rilevamento Infrazioni</h3>
+                    <p class="text-gray-500 text-lg leading-relaxed">Tecnologie avanzate per il controllo del traffico e della sicurezza stradale.</p>
+                </a>
+                <a href="#" class="reveal group block" style="transition-delay: 200ms;">
+                    <div class="h-64 rounded-3xl overflow-hidden mb-6 relative shadow-lg">
+                        <div class="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-110" style="background-image: url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80')"></div>
+                        <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition"></div>
+                    </div>
+                    <h3 class="text-3xl font-bold text-[#001f3f] mb-3 group-hover:text-blue-600 transition">SOES Suite</h3>
+                    <p class="text-gray-500 text-lg leading-relaxed">L'ecosistema completo di software e servizi per la Smart City.</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
     <div id="footer-inject"></div>
 
     <script>
-        let slides = [];
-        let cur = 0;
-        let tween;
-
+        // Hero Logic
+        let slides = []; let cur = 0; let tween;
         fetch('/api/content/home').then(r=>r.json()).then(d => {
             slides = d.slides || [];
-            if(slides.length === 0) {
-                // Default Slide if empty
-                slides = [{title:"Benvenuti in SOES", subtitle:"Innovazione per la PA", cta_text:"Servizi", link:"/services.html", image:"https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b"}];
-            }
-            
-            const con = document.getElementById('slides-container');
-            con.innerHTML = slides.map((s,i) => `<div class="slide ${i===0?'active':''}" style="background-image: url('${s.image}')"></div>`).join('');
+            if(slides.length === 0) slides = [{title:"Benvenuti in SOES", subtitle:"Innovazione per la PA", cta_text:"Servizi", link:"/services.html", image:"https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b"}];
+            document.getElementById('slides-container').innerHTML = slides.map((s,i) => `<div class="slide ${i===0?'active':''}" style="background-image: url('${s.image}')"></div>`).join('');
             runSlide(0);
         });
-
         function runSlide(i) {
             const s = slides[i];
             const title = document.getElementById('hero-title');
             const sub = document.getElementById('hero-subtitle');
             const cta = document.getElementById('hero-cta');
-            
             gsap.to([title, sub, cta], {opacity:0, y:20, duration:0.3, onComplete:()=>{
-                title.innerHTML = s.title;
-                sub.innerHTML = s.subtitle;
-                cta.innerHTML = s.cta_text;
-                cta.href = s.link;
+                title.innerHTML = s.title; sub.innerHTML = s.subtitle; cta.innerHTML = s.cta_text; cta.href = s.link;
                 gsap.to([title, sub, cta], {opacity:1, y:0, duration:0.6, stagger:0.1});
             }});
-
-            document.querySelectorAll('.slide').forEach((el, idx) => {
-                if(idx === i) el.classList.add('active'); else el.classList.remove('active');
-            });
-
-            if(tween) tween.kill();
-            gsap.set("#progress-bar", {width:"0%"});
-            if(slides.length > 1) {
-                tween = gsap.to("#progress-bar", {width:"100%", duration:6, ease:"none", onComplete:()=>{
-                    cur = (cur + 1) % slides.length;
-                    runSlide(cur);
-                }});
-            }
+            document.querySelectorAll('.slide').forEach((el, idx) => { if(idx === i) el.classList.add('active'); else el.classList.remove('active'); });
+            if(tween) tween.kill(); gsap.set("#progress-bar", {width:"0%"});
+            if(slides.length > 1) { tween = gsap.to("#progress-bar", {width:"100%", duration:6, ease:"none", onComplete:()=>{ cur = (cur + 1) % slides.length; runSlide(cur); }}); }
         }
+        const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('active'); } }); }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // ALERT LOGIC
+        fetch('/api/settings').then(r=>r.json()).then(s => {
+            const getVal = k => s.find(x=>x.key===k)?.value;
+            const alertText = getVal('global_alert');
+            const btnText = getVal('alert_btn_text');
+            const btnLink = getVal('alert_btn_link');
+            const type = getVal('alert_type') || 'info';
+            
+            if(alertText) {
+                const colors = {
+                    info: 'bg-blue-600',
+                    warning: 'bg-orange-500',
+                    danger: 'bg-red-600'
+                };
+                const bg = colors[type] || colors.info;
+                
+                document.getElementById('alert-bar').innerHTML = `
+                <div class="${bg} text-white px-4 py-3 relative z-50 flex flex-col md:flex-row items-center justify-center text-center gap-4">
+                    <span class="font-bold tracking-wide">${alertText}</span>
+                    ${btnText && btnLink ? `<a href="${btnLink}" class="bg-white text-gray-900 px-4 py-1 rounded-full text-xs font-bold uppercase hover:bg-gray-100 transition shadow-sm">${btnText}</a>` : ''}
+                </div>`;
+            }
+        });
     </script>
 </body>
 </html>

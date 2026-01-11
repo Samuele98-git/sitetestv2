@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>SOES Admin Suite</title>
+    <link rel="icon" type="image/png" href="/assets/logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
     <script src="http://localhost:8080/js/keycloak.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* Custom UI */
+        /* Custom UI Elements */
         .loader {border:4px solid #f3f3f3;border-top:4px solid #004080;border-radius:50%;width:30px;height:30px;animation:spin 1s linear infinite} 
         @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
         .nav-item { display:flex; align-items:center; padding: 12px 24px; cursor:pointer; border-left: 4px solid transparent; transition: all 0.2s; color: #a0aec0; }
@@ -33,14 +34,16 @@
         
         <aside class="w-72 bg-[#001f3f] flex flex-col shadow-2xl z-20 flex-shrink-0">
             <div class="p-6 bg-[#001830] flex items-center gap-3 border-b border-gray-700">
-                <img src="/assets/logo.png" class="h-8 brightness-200 grayscale">
+                <img :src="settings.site_logo" class="h-8 w-auto brightness-200 grayscale object-contain" alt="Logo">
                 <span class="font-bold text-white text-lg tracking-wide">ADMIN</span>
             </div>
             
             <nav class="flex-1 overflow-y-auto py-4 space-y-1">
                 <a @click="tab='home'" :class="['nav-item', tab==='home'?'active':'']"><i class="fas fa-home w-6"></i> Home Page</a>
                 <a @click="tab='pages'" :class="['nav-item', tab==='pages'?'active':'']"><i class="fas fa-layer-group w-6"></i> Costruttore Pagine</a>
+                <a @click="tab='cv'" :class="['nav-item', tab==='cv'?'active':'']"><i class="fas fa-users w-6"></i> CV & Concorsi</a>
                 <a @click="tab='menu'" :class="['nav-item', tab==='menu'?'active':'']"><i class="fas fa-bars w-6"></i> Menu Sito</a>
+                <a @click="tab='footer'" :class="['nav-item', tab==='footer'?'active':'']"><i class="fas fa-shoe-prints w-6"></i> Footer</a>
                 <a @click="tab='services'" :class="['nav-item', tab==='services'?'active':'']"><i class="fas fa-briefcase w-6"></i> Servizi</a>
                 <a @click="tab='modulistica'" :class="['nav-item', tab==='modulistica'?'active':'']"><i class="fas fa-file-pdf w-6"></i> Modulistica</a>
                 <a @click="tab='sedi'" :class="['nav-item', tab==='sedi'?'active':'']"><i class="fas fa-map-marker-alt w-6"></i> Contatti & Sedi</a>
@@ -62,12 +65,10 @@
                     <h1 class="text-3xl font-bold text-[#001f3f]">Home Carousel</h1>
                     <button @click="saveContent('home', home)" class="bg-green-600 text-white px-6 py-2 rounded shadow hover:bg-green-700 font-bold"><i class="fas fa-save mr-2"></i> Salva</button>
                 </div>
-
                 <div class="space-y-6">
                     <div v-for="(slide, i) in home.slides" :key="i" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 relative group">
                         <button @click="home.slides.splice(i,1)" class="absolute top-4 right-4 text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
                         <span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs font-bold mb-4 inline-block">Slide {{i+1}}</span>
-                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="bg-gray-50 p-4 rounded border">
                                 <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Immagine Sfondo</label>
@@ -102,7 +103,8 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div v-for="p in pagesList" :key="p.id" class="bg-white p-6 rounded-xl shadow border hover:shadow-lg transition">
                             <h3 class="font-bold text-lg mb-1 text-[#004080]">{{p.title}}</h3>
-                            <p class="text-xs text-gray-400 font-mono mb-4 bg-gray-50 p-1 rounded inline-block">/dynamic.html?p={{p.slug}}</p>
+                            <p class="text-xs text-gray-400 font-mono mb-2 bg-gray-50 p-1 rounded inline-block">/dynamic.html?p={{p.slug}}</p>
+                            <div v-if="p.page_password" class="text-xs text-orange-500 font-bold mb-4"><i class="fas fa-lock"></i> Protetta da password</div>
                             <div class="flex gap-2 mt-2">
                                 <a :href="'/dynamic.html?p='+p.slug" target="_blank" class="flex-1 bg-gray-100 text-center py-2 rounded text-sm text-gray-600 hover:bg-gray-200">Vedi</a>
                                 <button @click="editPage(p.slug)" class="flex-1 bg-blue-50 text-blue-600 py-2 rounded text-sm font-bold hover:bg-blue-100">Modifica</button>
@@ -118,12 +120,18 @@
                             <button @click="editingPage=null; loadPagesList()" class="text-gray-500 hover:text-black"><i class="fas fa-arrow-left"></i></button>
                             <input v-model="editingPage.title" class="bg-transparent font-bold text-xl border-none focus:ring-0" placeholder="Nome Pagina">
                         </div>
-                        <div class="flex gap-2">
-                            <button @click="addBlock('hero')" class="px-3 py-1 bg-purple-100 text-purple-700 rounded text-xs font-bold hover:bg-purple-200">+ Hero</button>
-                            <button @click="addBlock('text')" class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold hover:bg-blue-200">+ Testo</button>
-                            <button @click="addBlock('image')" class="px-3 py-1 bg-green-100 text-green-700 rounded text-xs font-bold hover:bg-green-200">+ Img</button>
-                            <button @click="addBlock('cards')" class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-bold hover:bg-yellow-200">+ Cards</button>
-                            <div class="w-px bg-gray-300 mx-2"></div>
+                        <div class="flex gap-2 items-center">
+                            <select @change="addBlock($event.target.value); $event.target.value=''" class="text-xs border p-1 rounded bg-white shadow-sm">
+                                <option value="">+ Aggiungi Blocco</option>
+                                <option value="hero">Hero Header</option>
+                                <option value="text">Testo HTML</option>
+                                <option value="text_image">Testo + Immagine (Side-by-Side)</option>
+                                <option value="image">Immagine Full</option>
+                                <option value="cards">Griglia Card</option>
+                                <option value="pdf">Bottone PDF</option>
+                                <option value="cv_form">Form Candidatura</option>
+                            </select>
+                            <div class="w-px bg-gray-300 mx-2 h-6"></div>
                             <button @click="savePage" class="bg-green-600 text-white px-4 py-1 rounded font-bold shadow hover:bg-green-700">Salva</button>
                         </div>
                     </div>
@@ -131,13 +139,37 @@
                     <div class="flex-1 overflow-y-auto p-8 bg-gray-100">
                         <div class="max-w-4xl mx-auto space-y-4">
                             <div class="bg-white p-4 rounded shadow-sm border mb-6 grid grid-cols-2 gap-4">
+                                <div class="col-span-2 border-b pb-2 mb-2 font-bold text-gray-500 text-xs uppercase">Impostazioni Base</div>
                                 <div><label class="text-xs font-bold text-gray-500">URL Slug</label><input v-model="editingPage.slug" class="w-full border p-2 rounded"></div>
                                 <div class="flex items-end"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" v-model="editingPage.is_visible"> <span>Pubblica Online</span></label></div>
+                                
+                                <div class="col-span-2 grid grid-cols-3 gap-4 border-t pt-2 mt-2">
+                                    <div><label class="text-xs text-gray-400">Inizio (Opz)</label><input type="datetime-local" v-model="editingPage.start_time" class="w-full border p-2 rounded text-sm"></div>
+                                    <div><label class="text-xs text-gray-400">Fine (Opz)</label><input type="datetime-local" v-model="editingPage.end_time" class="w-full border p-2 rounded text-sm"></div>
+                                    <div><label class="text-xs text-orange-400 font-bold"><i class="fas fa-lock"></i> Password (Opz)</label><input v-model="editingPage.page_password" class="w-full border p-2 rounded text-sm" placeholder="Lasciare vuoto se pubblica"></div>
+                                </div>
+                                
+                                <div class="col-span-2 border-t pt-2 mt-2">
+                                    <div class="font-bold text-gray-500 text-xs uppercase mb-2">SEO & Metadati</div>
+                                    <input v-model="editingPage.meta_desc" class="w-full border p-2 rounded text-sm mb-2" placeholder="Meta Description (per Google)">
+                                    <input v-model="editingPage.meta_keywords" class="w-full border p-2 rounded text-sm" placeholder="Meta Keywords (separati da virgola)">
+                                </div>
                             </div>
 
                             <div v-for="(block, i) in editingPage.blocks" :key="i" class="preview-box bg-white p-4 relative group rounded-lg">
-                                <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition flex gap-2">
+                                <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition flex gap-2 z-10 items-center">
                                     <span class="bg-gray-100 text-xs px-2 py-1 rounded uppercase font-bold">{{block.type}}</span>
+                                    
+                                    <select v-model="block.animation" class="text-xs border p-1 rounded bg-white">
+                                        <option value="">Nessuna Animazione</option>
+                                        <option value="fade-up">Fade Up</option>
+                                        <option value="fade-down">Fade Down</option>
+                                        <option value="fade-left">Fade Left</option>
+                                        <option value="fade-right">Fade Right</option>
+                                        <option value="zoom-in">Zoom In</option>
+                                        <option value="flip">Flip</option>
+                                    </select>
+                                    
                                     <button @click="editingPage.blocks.splice(i,1)" class="text-red-500 hover:bg-red-50 px-2 rounded">✕</button>
                                 </div>
 
@@ -150,7 +182,16 @@
                                 </div>
 
                                 <div v-if="block.type === 'text'">
-                                    <textarea v-model="block.content" class="w-full border-0 focus:ring-0 h-32 p-0 resize-y" placeholder="Scrivi il contenuto..."></textarea>
+                                    <textarea v-model="block.content" class="w-full border-0 focus:ring-0 h-32 p-0 resize-y" placeholder="Scrivi il contenuto (HTML supportato)..."></textarea>
+                                </div>
+
+                                <div v-if="block.type === 'text_image'" class="grid grid-cols-2 gap-4">
+                                    <div><textarea v-model="block.content" class="w-full border p-2 rounded h-full resize-none" placeholder="Testo..."></textarea></div>
+                                    <div class="bg-gray-50 p-2 rounded">
+                                        <img :src="block.image || 'https://placehold.co/100'" class="h-24 w-auto object-cover mb-2">
+                                        <input type="file" @change="uploadBlockImage($event, block)" class="text-xs w-full">
+                                        <label class="flex items-center gap-2 mt-2 text-xs"><input type="checkbox" v-model="block.image_right"> Immagine a destra</label>
+                                    </div>
                                 </div>
 
                                 <div v-if="block.type === 'image'" class="flex gap-4">
@@ -171,9 +212,75 @@
                                         <button @click="block.items.push({title:'', text:''})" class="border-2 border-dashed p-2 text-gray-400 font-bold hover:bg-gray-50">+ Card</button>
                                     </div>
                                 </div>
+
+                                <div v-if="block.type === 'pdf'" class="bg-red-50 p-4 rounded border border-red-100 flex items-center gap-4">
+                                    <i class="fas fa-file-pdf text-3xl text-red-500"></i>
+                                    <div class="flex-1">
+                                        <input v-model="block.label" class="w-full font-bold bg-transparent mb-1 border-b border-red-200" placeholder="Etichetta Bottone">
+                                        <input v-model="block.desc" class="w-full text-xs bg-transparent mb-1" placeholder="Descrizione opzionale">
+                                        <div class="flex gap-2 items-center">
+                                            <input type="file" @change="uploadBlockFile($event, block)" class="text-xs">
+                                            <input v-model="block.url" class="flex-1 text-xs text-gray-500" readonly placeholder="URL PDF">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div v-if="block.type === 'cv_form'" class="bg-indigo-50 p-4 rounded border border-indigo-100 text-center">
+                                    <i class="fas fa-user-tie text-2xl text-indigo-500 mb-2"></i>
+                                    <p class="font-bold text-indigo-900">Modulo Invio Candidatura Completo</p>
+                                    <p class="text-xs text-indigo-600">Richiede: Anagrafica, CF, Indirizzo, IP, Upload. (Animazioni supportate)</p>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div v-if="tab === 'cv'" class="max-w-7xl mx-auto space-y-6">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-3xl font-bold text-[#001f3f]">Gestione Candidature</h1>
+                    <select v-model="cvFilter" class="border p-2 rounded shadow">
+                        <option value="">Tutte le Competizioni</option>
+                        <option v-for="slug in uniqueCvSlugs" :key="slug" :value="slug">{{slug}}</option>
+                    </select>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow overflow-hidden overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 font-bold text-gray-500 border-b">
+                            <tr>
+                                <th class="p-4">Data</th>
+                                <th class="p-4">Candidato</th>
+                                <th class="p-4">CF & Città</th>
+                                <th class="p-4">Contatti</th>
+                                <th class="p-4">IP</th>
+                                <th class="p-4 text-right">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="cv in filteredCvs" :key="cv.id" class="border-b hover:bg-gray-50">
+                                <td class="p-4 text-gray-500 whitespace-nowrap">{{new Date(cv.submission_datetime).toLocaleString()}}</td>
+                                <td class="p-4">
+                                    <div class="font-bold uppercase">{{cv.surname}} {{cv.name}}</div>
+                                    <div class="text-xs text-blue-600 font-mono">{{cv.page_slug}}</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-mono font-bold">{{cv.tax_code}}</div>
+                                    <div class="text-xs text-gray-500">{{cv.city}} ({{cv.zip_code}})</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="text-blue-600">{{cv.email}}</div>
+                                    <div class="text-gray-500">{{cv.phone}}</div>
+                                </td>
+                                <td class="p-4 text-xs font-mono text-gray-400">{{cv.ip_address}}</td>
+                                <td class="p-4 text-right">
+                                    <a :href="cv.file_path" target="_blank" class="text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded text-xs font-bold">PDF</a>
+                                    <button @click="deleteCv(cv.id)" class="text-red-500 hover:text-red-700 px-2 ml-2"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr v-if="filteredCvs.length===0"><td colspan="6" class="p-8 text-center text-gray-400">Nessuna candidatura trovata.</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -183,7 +290,7 @@
                     <button @click="saveMenu" class="bg-green-600 text-white px-6 py-2 rounded shadow font-bold">Salva Menu</button>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow border">
-                    <div v-for="(item, i) in menu" :key="i" class="mb-4 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                     <div v-for="(item, i) in menu" :key="i" class="mb-4 border border-gray-200 rounded-lg p-4 bg-gray-50">
                         <div class="flex items-center gap-4 mb-2">
                             <span class="font-bold text-gray-400">#{{i+1}}</span>
                             <input v-model="item.label" class="border p-2 rounded font-bold flex-1" placeholder="Etichetta">
@@ -201,6 +308,30 @@
                         </div>
                     </div>
                     <button @click="menu.push({label:'Nuovo Link', url:'#', children:[]})" class="w-full py-3 bg-gray-100 border-2 border-dashed border-gray-300 rounded text-gray-500 font-bold hover:bg-white transition">+ Voce Principale</button>
+                </div>
+            </div>
+
+            <div v-if="tab === 'footer'" class="max-w-4xl mx-auto space-y-6">
+                <div class="flex justify-between items-center"><h1 class="text-3xl font-bold text-[#001f3f]">Gestione Footer</h1><button @click="saveFooter" class="bg-green-600 text-white px-6 py-2 rounded shadow font-bold">Salva Footer</button></div>
+                <div class="bg-white p-6 rounded-xl shadow border">
+                    <p class="text-sm text-gray-500 mb-4">Gestisci i link secondari che appaiono nel footer del sito.</p>
+                    <table class="w-full">
+                        <thead><tr class="text-left text-gray-500 text-xs uppercase"><th class="pb-2">Etichetta</th><th class="pb-2">URL</th><th class="pb-2">Sezione</th><th class="pb-2"></th></tr></thead>
+                        <tbody>
+                            <tr v-for="(l, i) in footerLinks" :key="i" class="border-b last:border-0">
+                                <td class="py-2"><input v-model="l.label" class="border p-2 rounded w-full"></td>
+                                <td class="py-2"><input v-model="l.url" class="border p-2 rounded w-full font-mono text-sm"></td>
+                                <td class="py-2">
+                                    <select v-model="l.section" class="border p-2 rounded w-full">
+                                        <option value="link_utili">Link Utili (Colonna 4)</option>
+                                        <option value="info">Info Legali (Bottom)</option>
+                                    </select>
+                                </td>
+                                <td class="py-2 text-right"><button @click="footerLinks.splice(i,1)" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <button @click="footerLinks.push({label:'Nuovo', url:'#', section:'link_utili', position: footerLinks.length+1})" class="mt-4 text-blue-600 font-bold">+ Aggiungi Link</button>
                 </div>
             </div>
 
@@ -236,40 +367,47 @@
                 </div>
             </div>
 
-            <div v-if="['modulistica', 'sedi', 'messages'].includes(tab)" class="max-w-5xl mx-auto space-y-6">
-                <div class="flex justify-between items-center">
-                    <h1 class="text-3xl font-bold capitalize text-[#001f3f]">{{tab}}</h1>
-                    <button v-if="tab!=='messages'" @click="tab==='modulistica'?saveContent('modulistica',modulistica):saveContent('contacts',contactData)" class="bg-green-600 text-white px-6 py-2 rounded font-bold shadow">Salva</button>
-                    <button v-else @click="loadMessages" class="bg-blue-100 text-blue-800 px-4 py-2 rounded font-bold">Aggiorna</button>
-                </div>
-
-                <div v-if="tab==='modulistica'">
-                    <div v-for="(sec, i) in modulistica.sections" :key="i" class="bg-white p-6 rounded shadow border mb-4 relative">
-                        <button @click="modulistica.sections.splice(i,1)" class="absolute top-4 right-4 text-red-500">✕</button>
-                        <input v-model="sec.name" class="font-bold text-lg border-b w-full mb-4" placeholder="Nome Sezione">
-                        <div v-for="(pdf, j) in sec.pdfs" :key="j" class="flex justify-between bg-gray-50 p-2 mb-1 rounded border">
-                            <span class="text-sm font-medium">{{pdf.name}}</span>
-                            <div class="flex gap-2"><a :href="pdf.path" target="_blank" class="text-blue-500 text-xs font-bold">Vedi</a><button @click="sec.pdfs.splice(j,1)" class="text-red-500 text-xs">Del</button></div>
-                        </div>
-                        <div class="mt-4 flex gap-2"><input type="file" :ref="'pdfInput'+i" class="text-sm"><button @click="uploadPdf(i)" class="bg-blue-600 text-white px-3 py-1 rounded text-xs">Carica</button></div>
-                    </div>
-                    <button @click="modulistica.sections.push({name:'Nuova Sezione', pdfs:[]})" class="w-full bg-gray-100 py-3 font-bold text-gray-500">+ Sezione</button>
-                </div>
-
-                <div v-if="tab==='sedi'">
-                    <div v-for="(sede, i) in contactData.sedi" :key="i" class="bg-white p-6 rounded shadow border mb-4 relative">
-                        <button @click="contactData.sedi.splice(i,1)" class="absolute top-4 right-4 text-red-500">✕</button>
-                        <div class="grid grid-cols-2 gap-4">
-                            <input v-model="sede.name" class="border p-2 font-bold rounded" placeholder="Nome">
-                            <input v-model="sede.phone" class="border p-2 rounded" placeholder="Telefono">
-                            <input v-model="sede.address" class="border p-2 col-span-2 rounded" placeholder="Indirizzo">
-                            <input v-model="sede.map_url" class="border p-2 col-span-2 rounded bg-gray-50 font-mono text-xs" placeholder="Google Embed URL">
+            <div v-if="tab === 'modulistica'" class="max-w-5xl mx-auto space-y-6">
+                <div class="flex justify-between items-center"><h1 class="text-3xl font-bold text-[#001f3f]">Modulistica</h1><button @click="saveContent('modulistica',modulistica)" class="bg-green-600 text-white px-6 py-2 rounded font-bold shadow">Salva</button></div>
+                <div v-for="(sec, i) in modulistica.sections" :key="i" class="bg-white p-6 rounded shadow border mb-4 relative">
+                    <button @click="modulistica.sections.splice(i,1)" class="absolute top-4 right-4 text-red-500">✕</button>
+                    <input v-model="sec.name" class="font-bold text-lg border-b w-full mb-4" placeholder="Nome Sezione (crea cartella)">
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div v-for="(pdf, j) in sec.pdfs" :key="j" class="bg-gray-50 p-3 rounded border flex flex-col gap-2">
+                            <div class="flex justify-between items-start">
+                                <span class="text-xs font-bold text-red-500">PDF</span>
+                                <button @click="sec.pdfs.splice(j,1)" class="text-red-400 text-xs">✕</button>
+                            </div>
+                            <input v-model="pdf.name" class="font-bold border p-1 rounded" placeholder="Nome Documento">
+                            <textarea v-model="pdf.desc" class="text-xs border p-1 rounded resize-none" placeholder="Descrizione..."></textarea>
+                            <a :href="pdf.path" target="_blank" class="text-blue-500 text-xs truncate">{{pdf.path}}</a>
                         </div>
                     </div>
-                    <button @click="contactData.sedi.push({name:'Nuova', map_url:''})" class="w-full bg-gray-100 py-3 font-bold text-gray-500">+ Sede</button>
+                    <div class="mt-4 flex gap-2 border-t pt-4">
+                        <input type="file" :ref="'pdfInput'+i" class="text-sm">
+                        <button @click="uploadPdf(i, sec.name)" class="bg-blue-600 text-white px-3 py-1 rounded text-xs">Carica in "{{sec.name}}"</button>
+                    </div>
                 </div>
+                <button @click="modulistica.sections.push({name:'Nuova Sezione', pdfs:[]})" class="w-full bg-gray-100 py-3 font-bold text-gray-500">+ Sezione</button>
+            </div>
 
-                <div v-if="tab==='messages'" class="bg-white rounded shadow overflow-hidden">
+            <div v-if="tab === 'sedi'" class="max-w-5xl mx-auto space-y-6">
+                <div class="flex justify-between items-center"><h1 class="text-3xl font-bold text-[#001f3f]">Sedi & Contatti</h1><button @click="saveContent('contacts',contactData)" class="bg-green-600 text-white px-6 py-2 rounded font-bold">Salva</button></div>
+                <div v-for="(sede, i) in contactData.sedi" :key="i" class="bg-white p-6 rounded shadow border mb-4 relative">
+                    <button @click="contactData.sedi.splice(i,1)" class="absolute top-4 right-4 text-red-500">✕</button>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input v-model="sede.name" class="border p-2 font-bold rounded" placeholder="Nome">
+                        <input v-model="sede.phone" class="border p-2 rounded" placeholder="Telefono">
+                        <input v-model="sede.address" class="border p-2 col-span-2 rounded" placeholder="Indirizzo">
+                        <input v-model="sede.map_url" class="border p-2 col-span-2 rounded bg-gray-50 font-mono text-xs" placeholder="Google Embed URL">
+                    </div>
+                </div>
+                <button @click="contactData.sedi.push({name:'Nuova', map_url:''})" class="w-full bg-gray-100 py-3 font-bold text-gray-500">+ Sede</button>
+            </div>
+
+            <div v-if="tab === 'messages'" class="max-w-6xl mx-auto space-y-6">
+                <div class="flex justify-between items-center"><h1 class="text-3xl font-bold text-[#001f3f]">Messaggi Ricevuti</h1><button @click="loadMessages" class="bg-blue-100 text-blue-800 px-4 py-2 rounded font-bold">Aggiorna</button></div>
+                <div class="bg-white rounded shadow overflow-hidden">
                     <table class="w-full text-sm text-left">
                         <thead class="bg-gray-50 font-bold text-gray-500 border-b"><tr><th class="p-4">Data</th><th class="p-4">Nome</th><th class="p-4">Email</th><th class="p-4">Msg</th><th class="p-4"></th></tr></thead>
                         <tbody>
@@ -279,7 +417,6 @@
                                 <td class="p-4 text-blue-600">{{m.email}}</td>
                                 <td class="p-4 truncate max-w-xs text-gray-500">{{m.message}}</td>
                                 <td class="p-4 text-right">
-                                    <button @click="selectedMessage=m" class="text-blue-500 font-bold mr-2">Vedi</button>
                                     <button @click="deleteMessage(m.id)" class="text-red-500 font-bold">X</button>
                                 </td>
                             </tr>
@@ -288,18 +425,90 @@
                 </div>
             </div>
 
-            <div v-if="tab==='settings'" class="max-w-lg mx-auto bg-white p-8 rounded shadow border-l-4 border-red-500">
-                <h3 class="font-bold text-xl mb-4">Avviso Globale</h3>
-                <input v-model="alertText" class="w-full border p-3 rounded mb-4" placeholder="Es. Manutenzione in corso...">
-                <button @click="saveAlert" class="bg-red-600 text-white px-6 py-2 rounded font-bold w-full">Aggiorna Sito</button>
-            </div>
+            <div v-if="tab === 'settings'" class="max-w-4xl mx-auto space-y-6">
+                <div class="flex justify-between items-center"><h1 class="text-3xl font-bold text-[#001f3f]">Impostazioni Sito</h1><button @click="saveSettings" class="bg-blue-600 text-white px-6 py-2 rounded font-bold shadow">Salva Tutto</button></div>
 
-            <div v-if="selectedMessage" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-                <div class="bg-white p-8 rounded-xl max-w-xl w-full shadow-2xl">
-                    <h2 class="font-bold text-xl text-[#004080] mb-2">{{selectedMessage.name}} {{selectedMessage.surname}}</h2>
-                    <p class="text-sm text-gray-500 mb-6">{{selectedMessage.email}}</p>
-                    <div class="bg-gray-50 p-4 rounded border mb-6 whitespace-pre-wrap">{{selectedMessage.message}}</div>
-                    <div class="flex justify-end gap-2"><button @click="selectedMessage=null" class="bg-gray-200 px-4 py-2 rounded font-bold">Chiudi</button></div>
+                <div class="bg-white p-6 rounded-xl shadow border-l-4 border-green-500">
+                    <h3 class="font-bold text-xl mb-4">Identità Sito (Favicon & Logo)</h3>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label class="block font-bold text-sm text-gray-600 mb-2">Logo Principale</label>
+                            <div class="flex items-center gap-4">
+                                <img :src="settings.site_logo" class="h-12 border bg-gray-50 p-1 rounded object-contain">
+                                <input type="file" @change="uploadIdentity($event, 'site_logo')" class="text-xs">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-sm text-gray-600 mb-2">Favicon (Browser Tab)</label>
+                            <div class="flex items-center gap-4">
+                                <img :src="settings.site_favicon" class="h-8 w-8 border bg-gray-50 p-1 rounded object-contain">
+                                <input type="file" @change="uploadIdentity($event, 'site_favicon')" class="text-xs">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow border-l-4 border-red-500">
+                    <h3 class="font-bold text-xl mb-4">Barra Notifiche</h3>
+                    <div class="space-y-4">
+                        <input v-model="settings.global_alert" class="w-full border p-3 rounded" placeholder="Testo Avviso (es. 'Ricerca Personale in corso')">
+                        <div class="flex gap-4">
+                            <input v-model="settings.alert_btn_text" class="w-1/2 border p-3 rounded" placeholder="Testo Bottone">
+                            <input v-model="settings.alert_btn_link" class="w-1/2 border p-3 rounded font-mono" placeholder="Link (es. /dynamic.html?p=concorsi)">
+                        </div>
+                        <select v-model="settings.alert_type" class="w-full border p-3 rounded">
+                            <option value="info">Info (Blu)</option>
+                            <option value="warning">Warning (Arancione)</option>
+                            <option value="danger">Urgent (Rosso)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-indigo-500">
+                        <h3 class="font-bold text-xl mb-4">Limiti Concorsi</h3>
+                        <div class="space-y-4">
+                            <div><label class="font-bold text-sm">Max CV per Competizione</label><input v-model="settings.cv_limit" type="number" class="w-full border p-2 rounded"></div>
+                            <div><label class="font-bold text-sm">Max Dimensione File (MB)</label><input v-model="settings.cv_max_size_mb" type="number" class="w-full border p-2 rounded"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-blue-500">
+                        <h3 class="font-bold text-xl mb-4">Tipografia & Colori</h3>
+                        <div class="space-y-4">
+                             <div>
+                                <label class="font-bold text-sm">Font Principale</label>
+                                <select v-model="settings.style_font" class="w-full border p-2 rounded">
+                                    <option value="Inter">Inter</option>
+                                    <option value="Roboto">Roboto</option>
+                                    <option value="Open Sans">Open Sans</option>
+                                    <option value="Merriweather">Merriweather</option>
+                                </select>
+                             </div>
+                             <div>
+                                 <label class="font-bold text-sm">Colore Titoli</label>
+                                 <div class="flex gap-2"><input type="color" v-model="settings.style_title_color"><input v-model="settings.style_title_color" class="border p-1 w-full text-sm"></div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow border-l-4 border-gray-800">
+                    <h3 class="font-bold text-xl mb-4">Avanzate & Manutenzione</h3>
+                    <div class="space-y-4">
+                        <label class="flex items-center gap-2 cursor-pointer bg-gray-100 p-3 rounded hover:bg-gray-200">
+                            <input type="checkbox" v-model="settings.maintenance_mode" true-value="true" false-value="false">
+                            <span class="font-bold">Attiva Modalità Manutenzione</span>
+                        </label>
+                        <div>
+                            <label class="block font-bold text-sm text-gray-600 mb-1">Custom CSS</label>
+                            <textarea v-model="settings.custom_css" class="w-full border p-2 rounded font-mono text-xs h-24" placeholder=".my-class { color: red; }"></textarea>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-sm text-gray-600 mb-1">Custom JS (Head)</label>
+                            <textarea v-model="settings.custom_js_head" class="w-full border p-2 rounded font-mono text-xs h-24" placeholder="<script>console.log('Hello');</script>"></textarea>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -319,7 +528,18 @@
                 data: {
                     tab: 'home',
                     home: { slides: [] }, services: { list: [] }, modulistica: { sections: [] }, contactData: { sedi: [] },
-                    menu: [], pagesList: [], editingPage: null, messages: [], selectedMessage: null, alertText: ''
+                    menu: [], footerLinks: [], pagesList: [], editingPage: null, messages: [], cvList: [], cvFilter: '',
+                    settings: { 
+                        global_alert: '', alert_btn_text:'', alert_btn_link:'', alert_type:'info', 
+                        cv_limit: 30, cv_max_size_mb: 5, 
+                        style_font: 'Inter', style_title_color:'#004080', style_subtitle_color:'#001f3f', style_body_color:'#374151',
+                        site_logo: '/assets/logo.png', site_favicon: '/assets/logo.png',
+                        custom_css: '', custom_js_head: '', maintenance_mode: 'false'
+                    }
+                },
+                computed: {
+                    uniqueCvSlugs() { return [...new Set(this.cvList.map(x => x.page_slug))]; },
+                    filteredCvs() { return this.cvFilter ? this.cvList.filter(x => x.page_slug === this.cvFilter) : this.cvList; }
                 },
                 mounted() { this.loadAll(); },
                 methods: {
@@ -329,7 +549,7 @@
                         if(!isFile) headers['Content-Type']='application/json';
                         const opts = {method, headers};
                         if(body) {
-                            if(isFile || url.includes('menu') || url.includes('pages') || url.includes('settings')) opts.body = isFile ? body : JSON.stringify(body);
+                            if(isFile || url.includes('menu') || url.includes('footer') || url.includes('pages') || url.includes('settings')) opts.body = isFile ? body : JSON.stringify(body);
                             else opts.body = JSON.stringify({content: body});
                         }
                         return fetch('/api'+url, opts);
@@ -340,34 +560,64 @@
                         r = await this.api('/content/modulistica'); this.modulistica = await r.json(); if(!this.modulistica.sections) this.$set(this.modulistica,'sections',[]);
                         r = await this.api('/content/contacts'); this.contactData = await r.json(); if(!this.contactData.sedi) this.$set(this.contactData,'sedi',[]);
                         r = await this.api('/menu'); this.menu = await r.json();
-                        r = await fetch('/api/settings'); const s = await r.json(); const a = s.find(x=>x.key==='global_alert'); if(a) this.alertText=a.value;
-                        this.loadPagesList(); this.loadMessages();
+                        r = await this.api('/footer'); this.footerLinks = await r.json();
+                        
+                        r = await fetch('/api/settings'); 
+                        const s = await r.json(); 
+                        const getVal = (k, def) => s.find(x=>x.key===k)?.value || def;
+                        // Populate settings manually to ensure reactivity
+                        Object.keys(this.settings).forEach(k => {
+                            this.settings[k] = getVal(k, this.settings[k]);
+                        });
+
+                        this.loadPagesList(); 
+                        this.loadMessages();
+                        this.loadCvs();
                     },
                     // --- UPLOADS ---
                     async uploadSlideImage(e, i) { const f = e.target.files[0]; if(!f) return; const fd = new FormData(); fd.append('file',f); const r = await this.api('/upload', 'POST', fd, true); const d = await r.json(); this.$set(this.home.slides[i], 'image', d.filePath); },
                     async uploadSvcImage(e, i) { const f = e.target.files[0]; if(!f) return; const fd = new FormData(); fd.append('file',f); const r = await this.api('/upload', 'POST', fd, true); const d = await r.json(); this.$set(this.services.list[i], 'image', d.filePath); },
-                    async uploadBlockImage(e, block) { const f = e.target.files[0]; if(!f) return; const fd = new FormData(); fd.append('file',f); const r = await this.api('/upload', 'POST', fd, true); const d = await r.json(); block.url = d.filePath; },
-                    async uploadPdf(i) { const f = this.$refs['pdfInput'+i][0].files[0]; if(!f) return; const fd = new FormData(); fd.append('file',f); const r = await this.api('/upload', 'POST', fd, true); const d = await r.json(); this.modulistica.sections[i].pdfs.push({name: f.name, path: d.filePath}); },
+                    async uploadBlockImage(e, block) { const f = e.target.files[0]; if(!f) return; const fd = new FormData(); fd.append('file',f); const r = await this.api('/upload', 'POST', fd, true); const d = await r.json(); block.url = d.filePath; if(block.type==='text_image') block.image = d.filePath; },
+                    async uploadBlockFile(e, block) { const f = e.target.files[0]; if(!f) return; const fd = new FormData(); fd.append('file',f); if(this.editingPage) fd.append('folder', this.editingPage.slug); const r = await this.api('/upload', 'POST', fd, true); const d = await r.json(); block.url = d.filePath; },
+                    async uploadPdf(i, folderName) { const f = this.$refs['pdfInput'+i][0].files[0]; if(!f) return; const fd = new FormData(); fd.append('file',f); fd.append('folder', folderName || 'modulistica'); const r = await this.api('/upload', 'POST', fd, true); const d = await r.json(); this.modulistica.sections[i].pdfs.push({name: f.name, desc:'', path: d.filePath}); },
+                    async uploadIdentity(e, key) {
+                        const f = e.target.files[0]; if(!f) return;
+                        const fd = new FormData(); fd.append('file',f);
+                        const r = await this.api('/upload', 'POST', fd, true);
+                        const d = await r.json();
+                        this.settings[key] = d.filePath;
+                    },
                     // --- PAGES ---
                     async loadPagesList() { let r = await this.api('/pages'); this.pagesList = await r.json(); },
-                    createPage() { this.editingPage = { slug: 'nuova-'+Date.now(), title: 'Nuova Pagina', is_visible: true, blocks: [] }; },
+                    createPage() { this.editingPage = { slug: 'nuova-'+Date.now(), title: 'Nuova Pagina', is_visible: true, blocks: [], start_time: '', end_time: '', page_password: '', meta_desc:'', meta_keywords:'' }; },
                     async editPage(slug) { let r = await this.api('/pages/'+slug); this.editingPage = await r.json(); },
                     async savePage() { await this.api('/pages', 'POST', this.editingPage); alert('Salvato'); this.loadPagesList(); },
                     async deletePage(id) { if(confirm('Eliminare?')) { await this.api('/pages/'+id, 'DELETE'); this.loadPagesList(); } },
                     addBlock(type) {
-                        let b = {type};
-                        if(type==='hero') b={type, title:'Titolo', text:'...', image:''};
-                        if(type==='text') b={type, content:''};
-                        if(type==='image') b={type, url:''};
-                        if(type==='cards') b={type, items:[{title:'Card', text:'...'}]};
+                        if(!type) return;
+                        let b = {type, animation: ''};
+                        if(type==='hero') b={type, title:'Titolo', text:'...', image:'', animation:''};
+                        if(type==='text') b={type, content:'', animation:''};
+                        if(type==='text_image') b={type, content:'', image:'', image_right: false, animation:''};
+                        if(type==='image') b={type, url:'', animation:''};
+                        if(type==='cards') b={type, items:[{title:'Card', text:'...'}], animation:''};
+                        if(type==='pdf') b={type, label:'Scarica PDF', desc:'', url:'', animation:''};
+                        if(type==='cv_form') b={type, animation:''};
                         this.editingPage.blocks.push(b);
                     },
                     // --- OTHERS ---
                     async saveMenu() { await this.api('/menu', 'POST', {structure: this.menu}); alert('Menu salvato'); },
+                    async saveFooter() { await this.api('/footer', 'POST', this.footerLinks); alert('Footer salvato'); },
                     async saveContent(p, d) { await this.api('/content/'+p, 'POST', d); alert('Salvato'); },
-                    async saveAlert() { await this.api('/settings', 'POST', {key:'global_alert', value:this.alertText}); alert('Avviso Aggiornato'); },
+                    async saveSettings() { 
+                        const arr = Object.keys(this.settings).map(k => ({key:k, value:this.settings[k]}));
+                        await this.api('/settings', 'POST', arr); 
+                        alert('Impostazioni Aggiornate'); 
+                    },
                     async loadMessages() { let r = await this.api('/messages'); this.messages = await r.json(); },
-                    async deleteMessage(id) { if(confirm('Eliminare?')) { await this.api('/messages/'+id, 'DELETE'); this.loadMessages(); } }
+                    async deleteMessage(id) { if(confirm('Eliminare?')) { await this.api('/messages/'+id, 'DELETE'); this.loadMessages(); } },
+                    async loadCvs() { let r = await this.api('/cvs'); this.cvList = await r.json(); },
+                    async deleteCv(id) { if(confirm('Eliminare candidatura?')) { await this.api('/cvs/'+id, 'DELETE'); this.loadCvs(); } }
                 }
             });
         });

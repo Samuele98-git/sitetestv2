@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS site_content (
 );
 CREATE TABLE IF NOT EXISTS site_settings (
     key VARCHAR(50) PRIMARY KEY,
-    value VARCHAR(255) NOT NULL
+    value TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS contact_messages (
     id SERIAL PRIMARY KEY,
@@ -20,11 +20,39 @@ CREATE TABLE IF NOT EXISTS custom_pages (
     slug VARCHAR(100) UNIQUE NOT NULL,
     title VARCHAR(200) NOT NULL,
     is_visible BOOLEAN DEFAULT true,
+    start_time TIMESTAMP,
+    end_time TIMESTAMP,
+    page_password VARCHAR(100),
+    meta_desc VARCHAR(255),
+    meta_keywords VARCHAR(255),
     blocks JSONB DEFAULT '[]'
 );
 CREATE TABLE IF NOT EXISTS site_menu (
     id SERIAL PRIMARY KEY,
     structure JSONB NOT NULL
+);
+CREATE TABLE IF NOT EXISTS footer_links (
+    id SERIAL PRIMARY KEY,
+    label VARCHAR(100) NOT NULL,
+    url VARCHAR(255) NOT NULL,
+    section VARCHAR(50) DEFAULT 'link_utili',
+    position INTEGER DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS competition_cvs (
+    id SERIAL PRIMARY KEY,
+    submission_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    surname VARCHAR(100) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    tax_code VARCHAR(16) NOT NULL,
+    birth_place VARCHAR(100),
+    address VARCHAR(200),
+    zip_code VARCHAR(10),
+    city VARCHAR(100),
+    email VARCHAR(150) NOT NULL,
+    phone VARCHAR(20),
+    ip_address VARCHAR(45),
+    page_slug VARCHAR(100) NOT NULL,
+    file_path VARCHAR(255) NOT NULL
 );
 
 -- ================= SEED DATA =================
@@ -50,7 +78,7 @@ INSERT INTO site_content (page_name, content) VALUES
     ]
 }') ON CONFLICT (page_name) DO NOTHING;
 
--- 2. SERVICES LIST (Overview Page)
+-- 2. SERVICES LIST
 INSERT INTO site_content (page_name, content) VALUES 
 ('services', '{
     "list": [
@@ -75,7 +103,7 @@ INSERT INTO site_content (page_name, content) VALUES
     "pec": "soes@pec.it"
 }') ON CONFLICT (page_name) DO NOTHING;
 
--- 4. CUSTOM PAGES (The Content)
+-- 4. CUSTOM PAGES
 INSERT INTO custom_pages (slug, title, blocks) VALUES 
 ('azienda', 'Chi Siamo', '[
     {"type":"hero", "title":"Chi Siamo", "text":"Leader nei servizi per la Pubblica Amministrazione", "image":"https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80"},
@@ -92,7 +120,7 @@ INSERT INTO custom_pages (slug, title, blocks) VALUES
 ]')
 ON CONFLICT (slug) DO NOTHING;
 
--- 5. MENU
+-- 5. MENU & FOOTER
 INSERT INTO site_menu (id, structure) VALUES (1, '[
     {"label": "Home", "url": "/", "children": []},
     {"label": "Azienda", "url": "/dynamic.html?p=azienda", "children": []},
@@ -105,4 +133,29 @@ INSERT INTO site_menu (id, structure) VALUES (1, '[
     {"label": "Contatti", "url": "/contatti.html", "children": []}
 ]') ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO site_settings (key, value) VALUES ('global_alert', '') ON CONFLICT (key) DO NOTHING;
+INSERT INTO footer_links (label, url, section, position) VALUES 
+('Chi Siamo', '/dynamic.html?p=azienda', 'link_utili', 1),
+('Servizi', '/services.html', 'link_utili', 2),
+('Modulistica', '/modulistica.html', 'link_utili', 3),
+('Privacy Policy', '#', 'link_utili', 4),
+('Certificazioni ISO', '#', 'info', 1)
+ON CONFLICT DO NOTHING;
+
+-- 6. SETTINGS DEFAULTS
+INSERT INTO site_settings (key, value) VALUES 
+('global_alert', ''),
+('alert_btn_text', ''),
+('alert_btn_link', ''),
+('alert_type', 'info'),
+('cv_limit', '30'),
+('cv_max_size_mb', '5'),
+('style_title_color', '#004080'),
+('style_subtitle_color', '#001f3f'),
+('style_body_color', '#374151'),
+('style_font', 'Inter'),
+('site_logo', '/assets/logo.png'),
+('site_favicon', '/assets/logo.png'),
+('custom_css', ''),
+('custom_js_head', ''),
+('maintenance_mode', 'false')
+ON CONFLICT (key) DO NOTHING;
